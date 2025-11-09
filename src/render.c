@@ -1,12 +1,23 @@
 #include "render.h"
 #include <stdio.h>
 
-// TODO: Print the entire map
 void render_map(Level *lvl) {
-    // TODO
+
+    int player_pos_x = lvl->player.x;
+    int player_pos_y = lvl->player.y;
+
+    for(int i = 0; i < lvl->height; i++) {
+        for(int j = 0; j < lvl->width; j++) {
+            if(i == player_pos_x && j == player_pos_y) {
+                printf("%c", '@');
+            } else {
+                printf("%c ", lvl->tiles[i][j]);
+            }
+        }
+        printf("\n");
+    }
 }
 
-// TODO: Print additional info like moves count
 void render_status(Level *lvl) {
-    // TODO
+    printf("Player position is x: %d and y: %d\n", lvl->player.x, lvl->player.y);
 }

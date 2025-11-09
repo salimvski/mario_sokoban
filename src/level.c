@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO: Load level file into dynamically allocated Level struct
 
 void print_tiles(char **tiles, int width, int height) {
     for(int i = 0; i < height; i++) {
@@ -33,7 +32,6 @@ Level *load_level(const char *filename) {
     while(fgets(file_line, 100, fptr)) {
         if(strlen(file_line) - 1 > max_line_len) {
             max_line_len = strlen(file_line) - 1;
-            
         }
         rows++;
     }
