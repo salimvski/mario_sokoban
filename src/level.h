@@ -14,7 +14,7 @@ typedef struct {
 } Level;
 
 Level *load_level(const char *filename);
-// Free memory allocated for a level
+
 void free_level(Level *lvl);
 
 #endif // LEVEL_H

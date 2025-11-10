@@ -52,9 +52,13 @@ Level *load_level(const char *filename) {
             if(file_line[i] == '@'){
                 level->player.x = line_ctr;
                 level->player.y = line_len;
+                level->tiles[line_ctr][i] = ' ';
+            } else {
+                level->tiles[line_ctr][i] = file_line[i];
+                
             }
-            level->tiles[line_ctr][i] = file_line[i];
             line_len++;
+            
         }
         for (int i = line_len; i < level->width; i++) {
             level->tiles[line_ctr][i] = ' ';
@@ -77,18 +81,18 @@ void free_level(Level *lvl) {
 }
 
 
-int main(int argc, char *argv[]) {
+// int main(int argc, char *argv[]) {
 
-    if (argc < 2) {
-        printf("Error, please provide a filename!\n");
-        exit(EXIT_FAILURE);
-    }
+//     if (argc < 2) {
+//         printf("Error, please provide a filename!\n");
+//         exit(EXIT_FAILURE);
+//     }
 
-    char *filename = argv[1];
+//     char *filename = argv[1];
 
-    Level *loaded_level = load_level(filename);
+//     Level *loaded_level = load_level(filename);
 
-    free_level(loaded_level);
+//     free_level(loaded_level);
 
-    return 0;
-}
+//     return 0;
+// }
