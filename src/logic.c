@@ -6,8 +6,13 @@ int try_move(Level *lvl, int dx, int dy) {
     return 0;
 }
 
-// TODO: Return 1 if all goals covered, else 0
 int check_win(Level *lvl) {
-    // TODO
-    return 0;
+    for(int i = 0; i < lvl->height; i++) {
+        for(int j = 0; j < lvl->width; j++) {
+            if(lvl->tiles[i][j] == '*') {
+                return false;
+            }
+        }
+    }
+    return true;
 }
