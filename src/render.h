@@ -1,12 +1,16 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include <SDL2/SDL.h>
 #include "level.h"
 
-// Print the map to the console
-void render_map(Level *lvl);
+// Initialize textures once after renderer creation
+void init_textures(SDL_Renderer *renderer);
 
-// Print additional info (moves count, goals remaining)
-void render_status(Level *lvl);
+// Free all textures when closing the game
+void destroy_textures();
 
-#endif // RENDER_H
+// Render the entire map + player
+void render_map_sdl(SDL_Renderer *renderer, Level *lvl);
+
+#endif
