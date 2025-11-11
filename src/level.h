@@ -11,7 +11,13 @@ typedef struct {
     Player player;
 } Level;
 
+
+void reset_level(Level *current_level, Level *original_level);
+
+void copy_level(Level *current_level, Level *original_level);
+
 Level *load_level(const char *filename);
+
 void free_level(Level *lvl);
 
 #endif

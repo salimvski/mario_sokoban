@@ -1,0 +1,42 @@
+# Build directories
+/build/
+/bin/
+/obj/
+
+# Executables
+*.exe
+*.out
+*.elf
+*.a
+*.so
+*.dylib
+
+# Object files
+*.o
+*.obj
+
+# Dependency files
+*.d
+
+# SDL-related files (optional, if you generate cache)
+*.log
+
+# Editor/IDE files
+.vscode/
+.idea/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*~
+*.swp
+*.bak
+
+# Valgrind / sanitizer outputs
+*.log
+*.vgcore.*
