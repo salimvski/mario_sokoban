@@ -1,22 +1,6 @@
 #include "logic.h"
 #include <stdio.h>
 
-
-// TODO: Move player in memory and handle pushing boxes
-
-// bool is_move_allowed(Level *lvl, int dx, int dy) {
-
-//     for(int i = 0; i < lvl->height; i++) {
-//         for(int j = 0; j < lvl->width; j++) {
-//             if(lvl->tiles[i][j] == '*') {
-//                 return false;
-//             }
-//         }
-//     }
-
-//     return false;
-// }
-
 int try_move(Level *lvl, int dx, int dy) {
 
     int next_x = lvl->player.x + dx;

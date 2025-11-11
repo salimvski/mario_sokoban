@@ -1,12 +1,13 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include <SDL2/SDL.h>
 #include "level.h"
 
-// Print the map to the console
-void render_map(Level *lvl);
+void init_textures(SDL_Renderer *renderer);
 
-// Print additional info (moves count, goals remaining)
-void render_status(Level *lvl);
+void destroy_textures();
 
-#endif // RENDER_H
+void render_map_sdl(SDL_Renderer *renderer, Level *lvl);
+
+#endif
