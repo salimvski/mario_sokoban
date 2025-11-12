@@ -32,9 +32,9 @@ clean:
 
 # Run normally
 run: $(TARGET)
-	./$(TARGET) levels/level1.txt
+	./$(TARGET) levels/level2.txt
 
 # Debug build with AddressSanitizer
 debug: $(TARGET)
 	@echo "Running with AddressSanitizer..."
-	./$(TARGET) levels/level1.txt
+	./$(TARGET) levels/level2.txt

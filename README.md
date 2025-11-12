@@ -67,9 +67,14 @@ make
 ## Roadmap
 
 ### Core game
-- Reset game state by press R
+- Reset game state by press R - DONE
 - Create full menu logic
 
 ### Multiplayer side
 - Able to connect to a server to join a party
 - Able to play 1 v 1 game two split screens
+
+
+## Bugs
+
+- Fix display of map does not look like the lvl.txt
