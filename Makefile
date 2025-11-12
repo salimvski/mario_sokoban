@@ -1,7 +1,7 @@
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer `sdl2-config --cflags`
-LDFLAGS = `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -fsanitize=address
+LDFLAGS = `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -lSDL2_ttf -fsanitize=address
 
 # Source and build directories
 SRC_DIR = src
