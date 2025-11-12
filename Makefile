@@ -1,40 +1,32 @@
-# Compiler and flags
+# Compiler
 CC = gcc
-CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer `sdl2-config --cflags`
-LDFLAGS = `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -fsanitize=address
+CFLAGS = -Wall -Wextra -O2 -g
 
-# Source and build directories
-SRC_DIR = src
-BUILD_DIR = build
-OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/level.o $(BUILD_DIR)/render.o $(BUILD_DIR)/server.o
+# SDL flags (for client)
+SDL_CFLAGS  = $(shell sdl2-config --cflags)
+SDL_LIBS    = $(shell sdl2-config --libs) -lSDL2_image -lSDL2_mixer
 
-# Target
-TARGET = mario
+# Sources
+SERVER_SRC = src/server.c src/level.c src/logic.c
+CLIENT_SRC = src/client.c src/level.c src/logic.c src/render.c
 
-# Create build directory
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+# Targets
+SERVER_BIN = server
+CLIENT_BIN = client
 
-# Compile source files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+# Default target
+all: $(SERVER_BIN) $(CLIENT_BIN)
 
-# Link object files
-$(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
+# Build server (no SDL)
+$(SERVER_BIN): $(SERVER_SRC)
+	$(CC) $(CFLAGS) $^ -o $@
 
-# Normal build
-all: $(TARGET)
+# Build client (with SDL)
+$(CLIENT_BIN): $(CLIENT_SRC)
+	$(CC) $(CFLAGS) $(SDL_CFLAGS) $^ -o $@ $(SDL_LIBS)
 
-# Clean
+# Clean build
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET)
+	rm -f $(SERVER_BIN) $(CLIENT_BIN) *.o
 
-# Run normally
-run: $(TARGET)
-	./$(TARGET) levels/level2.txt
-
-# Debug build with AddressSanitizer
-debug: $(TARGET)
-	@echo "Running with AddressSanitizer..."
-	./$(TARGET) levels/level2.txt
+.PHONY: all clean

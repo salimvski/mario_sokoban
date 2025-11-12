@@ -1,47 +1,42 @@
+#include <arpa/inet.h>
 #include <errno.h>
+#include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
-#include <signal.h>
+
 #include "level.h"
 #include "logic.h"
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 int server_socket = -1;
 
-
-ssize_t read_n_bytes(int sock, void *buf, size_t n) {
+ssize_t read_n_bytes(int sock, void* buf, size_t n) {
     size_t total = 0;
     while (total < n) {
         ssize_t r = read(sock, (char*)buf + total, n - total);
-        if (r <= 0) return r; // error or closed
+        if (r <= 0)
+            return r;  // error or closed
         total += r;
     }
     return total;
 }
 
-
-void handle_sigint(int sig)
-{
+void handle_sigint(int sig) {
     printf("\nCaught SIGINT, shutting down server...\n");
-    if (server_socket >= 0)
-    {
+    if (server_socket >= 0) {
         close(server_socket);
     }
     exit(EXIT_SUCCESS);
 }
 
-void run_server(int port, char *level_name)
-{
-
+void run_server(int port, char* level_name) {
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     int opt = 1;
 
-    if (server_socket < 0)
-    {
+    if (server_socket < 0) {
         perror("socket failed !\n");
         exit(EXIT_FAILURE);
     }
@@ -56,15 +51,13 @@ void run_server(int port, char *level_name)
 
     myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if (bind(server_socket, (struct sockaddr *)&myaddr, sizeof(myaddr)) < 0)
-    {
+    if (bind(server_socket, (struct sockaddr*)&myaddr, sizeof(myaddr)) < 0) {
         perror("Bind failed, incorrect port !\n");
         close(server_socket);
         exit(EXIT_FAILURE);
     }
 
-    if (listen(server_socket, 10) < 0)
-    {
+    if (listen(server_socket, 10) < 0) {
         perror("listen failed\n");
         close(server_socket);
         exit(EXIT_FAILURE);
@@ -73,13 +66,10 @@ void run_server(int port, char *level_name)
     socklen_t addr_len = sizeof(myaddr);
 
     int client_fd;
-    while (1)
-    {
-
+    while (1) {
         printf("Server listening on port %d...\n", port);
-        client_fd = accept(server_socket, (struct sockaddr *)&myaddr, &addr_len);
-        if (client_fd < 0)
-        {
+        client_fd = accept(server_socket, (struct sockaddr*)&myaddr, &addr_len);
+        if (client_fd < 0) {
             if (errno == EINTR)
                 continue;
             perror("accept");
@@ -88,38 +78,40 @@ void run_server(int port, char *level_name)
 
         printf("✅ New client connected!\n");
 
-        Level *original_level = load_level(level_name);
+        Level* original_level = load_level(level_name);
 
-        Level *current_level = malloc(sizeof(Level));
+        Level* current_level = malloc(sizeof(Level));
 
         copy_level(current_level, original_level);
 
-        if (!current_level)
-        {
+        if (!current_level) {
             printf("Failed to load level!\n");
             exit(EXIT_FAILURE);
         }
 
         send_level(client_fd, current_level);
 
-        while (1)
-        {
-
+        while (1) {
             // Send game state to client
 
+            // printf("hallo dx: %d and dy: %d\n", dx, dy);
             // Send back updated state
 
             int move[2];
             ssize_t n = read_n_bytes(client_fd, move, sizeof(move));
+
             if (n == sizeof(move)) {
                 int dx = move[0];
                 int dy = move[1];
+                
                 try_move(current_level, dx, dy);
                 send_level(client_fd, current_level);
             } else if (n == 0) {
                 printf("Client disconnected\n");
+                break;
             } else {
                 perror("read failed");
+                break;
             }
         }
 
@@ -130,12 +122,9 @@ void run_server(int port, char *level_name)
     }
 }
 
-
-
-int main(int argc, char *argv[]) {
-
+int main(int argc, char* argv[]) {
     int port;
-    char *level_name;
+    char* level_name;
 
     if (argc < 3) {
         printf("Usage: %s <port> <level_file>\n", argv[0]);
@@ -149,6 +138,5 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, handle_sigint);
     run_server(port, level_name);
 
-    
     return 0;
 }

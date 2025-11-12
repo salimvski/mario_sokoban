@@ -5,6 +5,27 @@
 #include <sys/socket.h>
 
 
+Level *recv_level(int sock) {
+    Level *lvl = malloc(sizeof(Level));
+    if (!lvl) return NULL;
+
+    recv(sock, &lvl->width, sizeof(int), MSG_WAITALL);
+    recv(sock, &lvl->height, sizeof(int), MSG_WAITALL);
+    recv(sock, &lvl->player, sizeof(Player), MSG_WAITALL);
+
+    // allocate tiles
+    lvl->tiles = malloc(lvl->height * sizeof(char *));
+    for (int i = 0; i < lvl->height; i++) {
+        lvl->tiles[i] = malloc(lvl->width + 1);
+        recv(sock, lvl->tiles[i], lvl->width, MSG_WAITALL);
+        lvl->tiles[i][lvl->width] = '\0';
+    }
+
+    return lvl;
+}
+
+
+
 ssize_t send_all(int sock, void *buf, size_t len) {
     size_t total = 0;
     while (total < len) {
