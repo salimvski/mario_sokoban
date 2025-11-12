@@ -2,7 +2,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 
+
+ssize_t send_all(int sock, void *buf, size_t len) {
+    size_t total = 0;
+    while (total < len) {
+        ssize_t n = send(sock, (char*)buf + total, len - total, 0);
+        if (n <= 0) return n; // error or closed
+        total += n;
+    }
+    return total;
+}
+
+void send_level(int client_fd, Level *level) {
+    // send width and height
+    if (send_all(client_fd, &level->width, sizeof(int)) <= 0) {
+        perror("send width failed");
+        return;
+    }
+    if (send_all(client_fd, &level->height, sizeof(int)) <= 0) {
+        perror("send height failed");
+        return;
+    }
+
+    // send player position
+    if (send_all(client_fd, &level->player, sizeof(Player)) <= 0) {
+        perror("send player failed");
+        return;
+    }
+
+    // send tiles row by row
+    for (int i = 0; i < level->height; i++) {
+        if (send_all(client_fd, level->tiles[i], level->width * sizeof(char)) <= 0) {
+            perror("send tiles failed");
+            return;
+        }
+    }
+}
 
 
 void reset_level(Level *current_level, Level *original_level) {

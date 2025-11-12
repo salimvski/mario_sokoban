@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     SDL_Window *window = SDL_CreateWindow(
         "Mario Sokoban",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        screen_w / 2, screen_h / 2,
+        screen_w, screen_h,
         SDL_WINDOW_RESIZABLE
     );
     
