@@ -13,14 +13,19 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    Level *level = load_level(argv[1]);
-    if (!level) {
+    Level *original_level = load_level(argv[1]);
+
+    Level *current_level = malloc(sizeof(Level));
+
+    copy_level(current_level, original_level);
+
+    if (!current_level) {
         printf("Failed to load level!\n");
         return 1;
     }
 
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("SDL init error: %s\n", SDL_GetError());
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+        fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
         return 1;
     }
 
@@ -31,8 +36,11 @@ int main(int argc, char *argv[]) {
     }
 
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-        printf("SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
+        fprintf(stderr, "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
+        SDL_Quit();
+        return 1;
     }
+
 
     Mix_Music *bgm = Mix_LoadMUS("assets/mario_theme.mp3");
     if (bgm) Mix_PlayMusic(bgm, -1); // -1 = loop forever
@@ -51,9 +59,10 @@ int main(int argc, char *argv[]) {
         SDL_WINDOW_RESIZABLE
     );
     
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 
-    SDL_RenderSetLogicalSize(renderer, level->width * 32, level->height * 32);
+
+    SDL_RenderSetLogicalSize(renderer, current_level->width * 32, current_level->height * 32);
 
     init_textures(renderer);
 
@@ -67,31 +76,39 @@ int main(int argc, char *argv[]) {
             else if (e.type == SDL_KEYDOWN) {
                 int dx = 0, dy = 0;
                 switch (e.key.keysym.sym) {
+                    case SDLK_q: 
+                        running = 0;
+                        break;
+                    case SDLK_r: 
+                        reset_level(current_level, original_level); 
+                        break;
                     case SDLK_UP:    dx = -1; break;
                     case SDLK_DOWN:  dx = 1; break;
                     case SDLK_LEFT:  dy = -1; break;
                     case SDLK_RIGHT: dy = 1; break;
                     case SDLK_ESCAPE: running = 0; break;
                 }
-                try_move(level, dx, dy);
+                try_move(current_level, dx, dy);
             }
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
-        render_map_sdl(renderer, level);
+        render_map_sdl(renderer, current_level);
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
 
-        if (check_win(level)) {
+        if (check_win(current_level)) {
             printf("🎉 You win!\n");
+            fflush(stdout);
             SDL_Delay(1500);
             running = 0;
         }
     }
 
     destroy_textures();
-    free_level(level);
+    free_level(current_level);
+    free_level(original_level);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     IMG_Quit();

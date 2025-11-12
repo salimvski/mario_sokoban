@@ -3,6 +3,36 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+
+void reset_level(Level *current_level, Level *original_level) {
+    
+    current_level->player = original_level->player;
+
+    for (int i = 0; i < original_level->height; i++) {
+        memcpy(current_level->tiles[i], original_level->tiles[i], original_level->width);
+    }
+}
+
+
+void copy_level(Level *current_level, Level *original_level) {
+
+    current_level->tiles = malloc(sizeof(char*) * original_level->height);
+    for (int i = 0; i < original_level->height; i++) {
+        current_level->tiles[i] = malloc(sizeof(char) * original_level->width);
+    }
+
+
+    current_level->width = original_level->width;
+    current_level->height = original_level->height;
+    current_level->player = original_level->player;
+
+    for (int i = 0; i < original_level->height; i++) {
+        memcpy(current_level->tiles[i], original_level->tiles[i], original_level->width);
+    }
+
+}
+
 Level *load_level(const char *filename) {
     FILE *f = fopen(filename, "r");
     if (!f) return NULL;
