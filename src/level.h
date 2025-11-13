@@ -11,6 +11,11 @@ typedef struct {
     Player player;
 } Level;
 
+int update_level_from_socket(int sock, Level *lvl);
+
+Level *receive_level_from_socket(int sock);
+
+void send_level(int client_fd, Level *level);
 
 void reset_level(Level *current_level, Level *original_level);
 

@@ -2,7 +2,80 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 
+
+int update_level_from_socket(int sock, Level *lvl) {
+
+    int width, height;
+    if (recv(sock, &width, sizeof(int), MSG_WAITALL) <= 0) return -1;
+    if (recv(sock, &height, sizeof(int), MSG_WAITALL) <= 0) return -1;
+
+    if (width != lvl->width || height != lvl->height) return -1;
+
+    if (recv(sock, &lvl->player, sizeof(Player), MSG_WAITALL) <= 0) return -1;
+
+    for (int i = 0; i < lvl->height; i++) {
+        if (recv(sock, lvl->tiles[i], lvl->width, MSG_WAITALL) <= 0) return -1;
+    }
+
+    return 0;
+}
+
+
+Level *receive_level_from_socket(int sock) {
+    Level *lvl = malloc(sizeof(Level));
+    if (!lvl) return NULL;
+
+    recv(sock, &lvl->width, sizeof(int), MSG_WAITALL);
+    recv(sock, &lvl->height, sizeof(int), MSG_WAITALL);
+    recv(sock, &lvl->player, sizeof(Player), MSG_WAITALL);
+
+    lvl->tiles = malloc(lvl->height * sizeof(char *));
+    for (int i = 0; i < lvl->height; i++) {
+        lvl->tiles[i] = malloc(lvl->width + 1);
+        recv(sock, lvl->tiles[i], lvl->width, MSG_WAITALL);
+        lvl->tiles[i][lvl->width] = '\0';
+    }
+
+    return lvl;
+}
+
+
+
+ssize_t send_all(int sock, void *buf, size_t len) {
+    size_t total = 0;
+    while (total < len) {
+        ssize_t n = send(sock, (char*)buf + total, len - total, 0);
+        if (n <= 0) return n; // error or closed
+        total += n;
+    }
+    return total;
+}
+
+void send_level(int client_fd, Level *level) {
+
+    if (send_all(client_fd, &level->width, sizeof(int)) <= 0) {
+        perror("send width failed");
+        return;
+    }
+    if (send_all(client_fd, &level->height, sizeof(int)) <= 0) {
+        perror("send height failed");
+        return;
+    }
+
+    if (send_all(client_fd, &level->player, sizeof(Player)) <= 0) {
+        perror("send player failed");
+        return;
+    }
+
+    for (int i = 0; i < level->height; i++) {
+        if (send_all(client_fd, level->tiles[i], level->width * sizeof(char)) <= 0) {
+            perror("send tiles failed");
+            return;
+        }
+    }
+}
 
 
 void reset_level(Level *current_level, Level *original_level) {

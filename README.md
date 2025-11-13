@@ -1,80 +1,168 @@
-# Sokoban (C Project)
+# Mario Sokoban (C / SDL2)
 
-A minimal Sokoban clone in C — text-based version for practicing dynamic memory, game logic, and modular design.
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![C](https://img.shields.io/badge/language-C-brightgreen)](https://www.iso.org/standard/74528.html)
 
----
-
-## Project Structure
-
-include/   -> Header files (function signatures)
-src/       -> Source files (implementation placeholders)
-levels/    -> Level text files
-Makefile   -> Build instructions
+A simple networked **Sokoban** game written in C using **SDL2**, **SDL2_mixer**, and **SDL2_image**.
+Includes a **server** for game logic and a **client** for rendering and input.
 
 ---
 
-## Header Signatures
+## 🛠 Prerequisites
 
-### level.h
+Install required packages on **Fedora**:
 
-Level *load_level(const char *filename);
-void free_level(Level *lvl);
+```bash
+sudo dnf install gcc make SDL2-devel SDL2_mixer-devel SDL2_image-devel valgrind
+```
 
-### logic.h
+Optional (for debugging memory leaks):
 
-int try_move(Level *lvl, int dx, int dy);
-int check_win(Level *lvl);
-
-### render.h
-
-void render_map(Level *lvl);
-void render_status(Level *lvl);
+```bash
+sudo dnf install glibc-devel libasan
+```
 
 ---
 
-## Level file format (levels/level1.txt)
+## 📁 Project Structure
 
-#######
-#     #
-# .$@ #
-#  *  #
-#######
-
-Legend:  
-# = Wall  
-@ = Player  
-$ = Box  
-* = Goal  
-. = Floor  
+```
+./src/
+    client.c
+    server.c
+    level.c
+    render.c
+    logic.c
+assets/
+    tiles/
+    player/
+    mario_theme.mp3
+levels/
+    level1.txt
+    level2.txt
+Makefile
+README.md
+```
 
 ---
 
-## Build & Run
+## 🏗 Compilation
 
+### 1. Build everything
+
+```bash
 make
-./sokoban
+```
+
+* **Server** → `./server`
+* **Client** → `./sokoban` (compiled with AddressSanitizer for debugging)
+
+### 2. Clean build
+
+```bash
+make clean
+```
+
+Removes binaries (`server` and `sokoban`).
 
 ---
 
-## Future Add-ons
+## Running the Server
 
-- Multiple levels  
-- Undo feature  
-- SDL graphical version  
-- Save/load progress
+```bash
+make run-server ARGS="<port> <level_file>"
+```
 
+Example:
 
-## Roadmap
+```bash
+make run-server ARGS="5666 levels/level2.txt"
+```
 
-### Core game
-- Reset game state by press R - DONE
-- Create full menu logic
+* `<port>`: TCP port for the server.
+* `<level_file>`: Path to the level file.
 
-### Multiplayer side
-- Able to connect to a server to join a party
-- Able to play 1 v 1 game two split screens
+> Server runs under **Valgrind** by default to detect memory leaks.
 
+---
 
-## Bugs
+## Running the Client
 
-- Fix display of map does not look like the lvl.txt
+```bash
+make run-client ARGS="<host> <port>"
+```
+
+Example:
+
+```bash
+make run-client ARGS="127.0.0.1 5666"
+```
+
+* `<host>`: Server IP address (`127.0.0.1` for local).
+* `<port>`: TCP port server is listening on.
+
+### Controls
+
+* **W / A / S / D** → Move player
+* **R** → Reset level (if implemented)
+* **Q or ESC** → Exit the client
+
+---
+
+## Audio
+
+* Background music: `assets/mario_theme.mp3`
+* Default volume: 30%
+
+```c
+Mix_VolumeMusic(MIX_MAX_VOLUME * 0.3);
+```
+
+* Requires **SDL2_mixer**.
+
+---
+
+## ⚠ Known Memory Leaks
+
+* Small leaks (~2–3 KB) may appear in **ASan** or **Valgrind** output.
+* These come from **SDL2 internal allocations**, not your code.
+* Your **textures, music, and surfaces are properly freed**.
+
+---
+
+## Example Workflow
+
+1. Build everything:
+
+```bash
+make
+```
+
+2. Start server:
+
+```bash
+make run-server ARGS="5666 levels/level2.txt"
+```
+
+3. Start client in a new terminal:
+
+```bash
+make run-client ARGS="127.0.0.1 5666"
+```
+
+4. Control the player with **W/A/S/D**, and **Q** to quit.
+
+---
+
+## Notes
+
+* Client is compiled with **AddressSanitizer** for debugging.
+* Server is run under **Valgrind** to catch leaks and errors in network handling.
+* Level files are in `levels/` and can be modified to create custom puzzles.
+* Makefile supports `ARGS` to easily pass parameters for port, host, and level.
+
+---
+
+## License
+
+This project is licensed under the **MIT License** – see [LICENSE](LICENSE) for details.

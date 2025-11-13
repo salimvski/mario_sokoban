@@ -1,40 +1,44 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -g -fsanitize=address -fno-omit-frame-pointer `sdl2-config --cflags`
-LDFLAGS = `sdl2-config --libs` -lSDL2_image -lSDL2_mixer -fsanitize=address
+CFLAGS = -Wall -Wextra -g -O1
+ASAN_FLAGS = -fsanitize=address
 
-# Source and build directories
-SRC_DIR = src
-BUILD_DIR = build
-OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/level.o $(BUILD_DIR)/render.o
+# SDL2 flags
+SDL_CFLAGS = $(shell sdl2-config --cflags)
+SDL_LIBS   = $(shell sdl2-config --libs) -lSDL2_mixer -lSDL2_image
 
-# Target
-TARGET = mario
+# Source files
+SERVER_SRCS = src/server.c src/level.c src/logic.c
+CLIENT_SRCS = src/client.c src/level.c src/render.c
 
-# Create build directory
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+# Output binaries
+SERVER_BIN = server
+CLIENT_BIN = sokoban
 
-# Compile source files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+# Valgrind command
+VALGRIND = valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes
 
-# Link object files
-$(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
+# Default target
+all: $(SERVER_BIN) $(CLIENT_BIN)
 
-# Normal build
-all: $(TARGET)
+# Compile server
+$(SERVER_BIN): $(SERVER_SRCS)
+	$(CC) $(CFLAGS) $(SERVER_SRCS) -o $(SERVER_BIN)
 
-# Clean
+# Compile client with ASan
+$(CLIENT_BIN): $(CLIENT_SRCS)
+	$(CC) $(CFLAGS) $(ASAN_FLAGS) $(CLIENT_SRCS) -o $(CLIENT_BIN) $(SDL_CFLAGS) $(SDL_LIBS)
+
+# Run server with valgrind and optional arguments
+run-server:
+	$(VALGRIND) ./$(SERVER_BIN) $(ARGS)
+
+# Run client with optional arguments
+run-client:
+	./$(CLIENT_BIN) $(ARGS)
+
+# Clean binaries
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET)
+	rm -f $(SERVER_BIN) $(CLIENT_BIN)
 
-# Run normally
-run: $(TARGET)
-	./$(TARGET) levels/level2.txt
-
-# Debug build with AddressSanitizer
-debug: $(TARGET)
-	@echo "Running with AddressSanitizer..."
-	./$(TARGET) levels/level2.txt
+.PHONY: all run-server run-client clean

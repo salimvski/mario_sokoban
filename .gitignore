@@ -10,6 +10,10 @@
 *.a
 *.so
 *.dylib
+mario
+server
+server
+sokoban
 
 # Object files
 *.o
