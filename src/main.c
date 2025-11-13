@@ -9,20 +9,6 @@
 #include "render.h"
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        printf("Error: please provide a level file!\n");
-        return 1;
-    }
-
-    Level *original_level = load_level(argv[1]);
-    Level *current_level = malloc(sizeof(Level));
-    copy_level(current_level, original_level);
-
-    if (!current_level) {
-        printf("Failed to load level!\n");
-        return 1;
-    }
-
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
         fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
         return 1;
@@ -63,8 +49,6 @@ int main(int argc, char *argv[]) {
     
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
 
-    SDL_RenderSetLogicalSize(renderer, current_level->width * 32, current_level->height * 32);
-
     init_textures(renderer);
 
     int running = 1;
@@ -76,16 +60,15 @@ int main(int argc, char *argv[]) {
         running = 0;
     }
 
-    int in_menu = 1;
+    int in_main_menu = 1;
     int selected_option = 0;
+    int chosen_level = 0;
 
-    SDL_RenderSetLogicalSize(renderer, 0, 0);
-
-    while (in_menu) {
+    while (in_main_menu && running) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
                 running = 0;
-                in_menu = 0;
+                in_main_menu = 0;
             } else if (e.type == SDL_KEYDOWN) {
                 switch (e.key.keysym.sym) {
                     case SDLK_UP:
@@ -96,15 +79,45 @@ int main(int argc, char *argv[]) {
                         break;
                     case SDLK_RETURN:
                         if (selected_option == 0) {
-                            in_menu = 0;
+                            int in_level_menu = 1;
+                            int level_option = 0;
+                            while (in_level_menu && running) {
+                                while (SDL_PollEvent(&e)) {
+                                    if (e.type == SDL_QUIT) {
+                                        running = 0;
+                                        in_level_menu = 0;
+                                        in_main_menu = 0;
+                                    } else if (e.type == SDL_KEYDOWN) {
+                                        switch (e.key.keysym.sym) {
+                                            case SDLK_UP:
+                                                level_option = (level_option - 1 + 3) % 3;
+                                                break;
+                                            case SDLK_DOWN:
+                                                level_option = (level_option + 1) % 3;
+                                                break;
+                                            case SDLK_RETURN:
+                                                if (level_option == 0) { chosen_level = 1; in_level_menu = 0; in_main_menu = 0; }
+                                                else if (level_option == 1) { chosen_level = 2; in_level_menu = 0; in_main_menu = 0; }
+                                                else if (level_option == 2) { in_level_menu = 0; }
+                                                break;
+                                            case SDLK_ESCAPE:
+                                                in_level_menu = 0;
+                                                break;
+                                        }
+                                    }
+                                }
+
+                                render_level_menu(renderer, font, level_option);
+                                SDL_Delay(16);
+                            }
                         } else if (selected_option == 1) {
                             running = 0;
-                            in_menu = 0;
+                            in_main_menu = 0;
                         }
                         break;
                     case SDLK_ESCAPE:
                         running = 0;
-                        in_menu = 0;
+                        in_main_menu = 0;
                         break;
                 }
             }
@@ -114,7 +127,30 @@ int main(int argc, char *argv[]) {
         SDL_Delay(16);
     }
 
-    SDL_RenderSetLogicalSize(renderer, current_level->width * 32, current_level->height * 32);
+    if (!running || chosen_level == 0) {
+        destroy_textures();
+        TTF_CloseFont(font);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        IMG_Quit();
+        TTF_Quit();
+        Mix_FreeMusic(bgm);
+        Mix_CloseAudio();
+        SDL_Quit();
+        return 0;
+    }
+
+    char level_path[64];
+    snprintf(level_path, sizeof(level_path), "levels/level%d.txt", chosen_level);
+
+    Level *original_level = load_level(level_path);
+    if (!original_level) {
+        printf("Erreur : impossible de charger %s\n", level_path);
+        return 1;
+    }
+
+    Level *current_level = malloc(sizeof(Level));
+    copy_level(current_level, original_level);
 
     while (running) {
         while (SDL_PollEvent(&e)) {
@@ -156,13 +192,14 @@ int main(int argc, char *argv[]) {
     destroy_textures();
     free_level(current_level);
     free_level(original_level);
+    TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     IMG_Quit();
-    SDL_Quit();
     TTF_Quit();
     Mix_FreeMusic(bgm);
     Mix_CloseAudio();
+    SDL_Quit();
 
     return 0;
 }

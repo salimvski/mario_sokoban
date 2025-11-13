@@ -11,6 +11,8 @@ void destroy_textures();
 
 void render_menu(SDL_Renderer *renderer, TTF_Font *font, int selected_option);
 
+void render_level_menu(SDL_Renderer *renderer, TTF_Font *font, int selected_option);
+
 void render_map_sdl(SDL_Renderer *renderer, Level *lvl);
 
 
