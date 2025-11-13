@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    Mix_Music* background_music = Mix_LoadMUS("assets/mario_theme.mp3");
+    Mix_Music* background_music = Mix_LoadMUS("assets/audio/music/periwinkle.mp3");
     if (!background_music) {
         fprintf(stderr, "Failed to load music: %s\n", Mix_GetError());
     } else {

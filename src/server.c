@@ -30,7 +30,8 @@ ssize_t read_n_bytes(int sock, void* buf, size_t n) {
 }
 
 void handle_sigint(int sig) {
-    printf("\nCaught SIGINT, shutting down server...\n");
+    printf("\nCaught signal %d (%s), shutting down server...\n",
+           sig, strsignal(sig));
     if (server_socket >= 0) {
         close(server_socket);
     }
@@ -80,6 +81,8 @@ void* client_thread(void* arg) {
             perror("read failed");
             break;
         }
+        
+        if(check_win(current_level)) break;
     }
 
     free_level(current_level);

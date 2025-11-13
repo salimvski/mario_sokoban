@@ -25,10 +25,10 @@ void init_textures(SDL_Renderer *renderer) {
     floor_tex  = load_texture(renderer, "assets/tiles/floor.png");
     box_tex    = load_texture(renderer, "assets/tiles/box.png");
     goal_tex   = load_texture(renderer, "assets/tiles/goal.png");
-    player_tex[0] = load_texture(renderer, "assets/player/mario_right.png");
-    player_tex[1] = load_texture(renderer, "assets/player/mario_right.png");
-    player_tex[2] = load_texture(renderer, "assets/player/mario_right.png");
-    player_tex[3] = load_texture(renderer, "assets/player/mario_right.png");
+    player_tex[0] = load_texture(renderer, "assets/player/player_front.png");
+    player_tex[1] = load_texture(renderer, "assets/player/player_front.png");
+    player_tex[2] = load_texture(renderer, "assets/player/player_left.png");
+    player_tex[3] = load_texture(renderer, "assets/player/player_right.png");
 }
 
 void destroy_textures() {
