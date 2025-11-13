@@ -67,7 +67,7 @@ Removes binaries (`server` and `sokoban`).
 
 ---
 
-## 🚀 Running the Server
+## Running the Server
 
 ```bash
 make run-server ARGS="<port> <level_file>"
@@ -86,7 +86,7 @@ make run-server ARGS="5666 levels/level2.txt"
 
 ---
 
-## 🚀 Running the Client
+## Running the Client
 
 ```bash
 make run-client ARGS="<host> <port>"
@@ -109,7 +109,7 @@ make run-client ARGS="127.0.0.1 5666"
 
 ---
 
-## 🔊 Audio
+## Audio
 
 * Background music: `assets/mario_theme.mp3`
 * Default volume: 30%
@@ -130,7 +130,7 @@ Mix_VolumeMusic(MIX_MAX_VOLUME * 0.3);
 
 ---
 
-## 💡 Example Workflow
+## Example Workflow
 
 1. Build everything:
 
@@ -154,7 +154,7 @@ make run-client ARGS="127.0.0.1 5666"
 
 ---
 
-## 📝 Notes
+## Notes
 
 * Client is compiled with **AddressSanitizer** for debugging.
 * Server is run under **Valgrind** to catch leaks and errors in network handling.
@@ -163,12 +163,6 @@ make run-client ARGS="127.0.0.1 5666"
 
 ---
 
-## ⚡ License
+## License
 
 This project is licensed under the **MIT License** – see [LICENSE](LICENSE) for details.
-
----
-
-If you want, I can also **write a ready-to-use Makefile** that integrates **server, client, ARGS support, Valgrind, and ASan**, so someone can just `make run-server` or `make run-client` without tweaking anything.
-
-Do you want me to include that Makefile as well?
