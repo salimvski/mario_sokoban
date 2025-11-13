@@ -93,7 +93,12 @@ int setup_server_socket(int port) {
     }
 
     int opt = 1;
-    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        perror("setsockopt failed");
+        close(sock);
+        exit(EXIT_FAILURE);
+    }
 
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
