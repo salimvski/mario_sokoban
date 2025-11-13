@@ -1,32 +1,44 @@
-# Compiler
+# Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -O2 -g
+CFLAGS = -Wall -Wextra -g -O1
+ASAN_FLAGS = -fsanitize=address
 
-# SDL flags (for client)
-SDL_CFLAGS  = $(shell sdl2-config --cflags)
-SDL_LIBS    = $(shell sdl2-config --libs) -lSDL2_image -lSDL2_mixer
+# SDL2 flags
+SDL_CFLAGS = $(shell sdl2-config --cflags)
+SDL_LIBS   = $(shell sdl2-config --libs) -lSDL2_mixer -lSDL2_image
 
-# Sources
-SERVER_SRC = src/server.c src/level.c src/logic.c
-CLIENT_SRC = src/client.c src/level.c src/logic.c src/render.c
+# Source files
+SERVER_SRCS = src/server.c src/level.c src/logic.c
+CLIENT_SRCS = src/client.c src/level.c src/render.c
 
-# Targets
+# Output binaries
 SERVER_BIN = server
-CLIENT_BIN = client
+CLIENT_BIN = sokoban
+
+# Valgrind command
+VALGRIND = valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes
 
 # Default target
 all: $(SERVER_BIN) $(CLIENT_BIN)
 
-# Build server (no SDL)
-$(SERVER_BIN): $(SERVER_SRC)
-	$(CC) $(CFLAGS) $^ -o $@
+# Compile server
+$(SERVER_BIN): $(SERVER_SRCS)
+	$(CC) $(CFLAGS) $(SERVER_SRCS) -o $(SERVER_BIN)
 
-# Build client (with SDL)
-$(CLIENT_BIN): $(CLIENT_SRC)
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) $^ -o $@ $(SDL_LIBS)
+# Compile client with ASan
+$(CLIENT_BIN): $(CLIENT_SRCS)
+	$(CC) $(CFLAGS) $(ASAN_FLAGS) $(CLIENT_SRCS) -o $(CLIENT_BIN) $(SDL_CFLAGS) $(SDL_LIBS)
 
-# Clean build
+# Run server with valgrind and optional arguments
+run-server:
+	$(VALGRIND) ./$(SERVER_BIN) $(ARGS)
+
+# Run client with optional arguments
+run-client:
+	./$(CLIENT_BIN) $(ARGS)
+
+# Clean binaries
 clean:
-	rm -f $(SERVER_BIN) $(CLIENT_BIN) *.o
+	rm -f $(SERVER_BIN) $(CLIENT_BIN)
 
-.PHONY: all clean
+.PHONY: all run-server run-client clean

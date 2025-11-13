@@ -32,12 +32,14 @@ void init_textures(SDL_Renderer *renderer) {
 }
 
 void destroy_textures() {
-    SDL_DestroyTexture(wall_tex);
-    SDL_DestroyTexture(floor_tex);
-    SDL_DestroyTexture(box_tex);
-    SDL_DestroyTexture(goal_tex);
-    for (int i = 0; i < 4; i++)
+    SDL_DestroyTexture(wall_tex);   wall_tex = NULL;
+    SDL_DestroyTexture(floor_tex);  floor_tex = NULL;
+    SDL_DestroyTexture(box_tex);    box_tex = NULL;
+    SDL_DestroyTexture(goal_tex);   goal_tex = NULL;
+    for (int i = 0; i < 4; i++) {
         SDL_DestroyTexture(player_tex[i]);
+        player_tex[i] = NULL;
+    }
 }
 
 void render_map_sdl(SDL_Renderer *renderer, Level *lvl) {

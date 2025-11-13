@@ -1,15 +1,17 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
+#include <stdbool.h>
 #include "level.h"
 #include "logic.h"
+#include "server.h"
 
 int server_socket = -1;
 
@@ -18,7 +20,7 @@ ssize_t read_n_bytes(int sock, void* buf, size_t n) {
     while (total < n) {
         ssize_t r = read(sock, (char*)buf + total, n - total);
         if (r <= 0)
-            return r;  // error or closed
+            return r;
         total += r;
     }
     return total;
@@ -32,94 +34,86 @@ void handle_sigint(int sig) {
     exit(EXIT_SUCCESS);
 }
 
-void run_server(int port, char* level_name) {
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    int opt = 1;
+void* client_thread(void* arg) {
+    client_info_t* client = (client_info_t*)arg;
+    int client_fd = client->sock;
+    int id = client->id;
+    char *level_name = client->level_name;
 
-    if (server_socket < 0) {
-        perror("socket failed !\n");
+    printf("Client %d connected\n", id);
+
+    char buffer[256];
+
+    Level* original_level = load_level(level_name);
+
+    Level* current_level = malloc(sizeof(Level));
+
+    copy_level(current_level, original_level);
+
+    if (!current_level) {
+        printf("Failed to load level!\n");
         exit(EXIT_FAILURE);
     }
 
-    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    send_level(client_fd, current_level);
 
-    struct sockaddr_in myaddr;
-    memset(&myaddr, 0, sizeof(struct sockaddr_in));
-
-    myaddr.sin_family = AF_INET;
-    myaddr.sin_port = htons(port);
-
-    myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    if (bind(server_socket, (struct sockaddr*)&myaddr, sizeof(myaddr)) < 0) {
-        perror("Bind failed, incorrect port !\n");
-        close(server_socket);
-        exit(EXIT_FAILURE);
-    }
-
-    if (listen(server_socket, 10) < 0) {
-        perror("listen failed\n");
-        close(server_socket);
-        exit(EXIT_FAILURE);
-    }
-
-    socklen_t addr_len = sizeof(myaddr);
-
-    int client_fd;
     while (1) {
-        printf("Server listening on port %d...\n", port);
-        client_fd = accept(server_socket, (struct sockaddr*)&myaddr, &addr_len);
-        if (client_fd < 0) {
-            if (errno == EINTR)
-                continue;
-            perror("accept");
-            continue;
+
+        int move[2];
+        ssize_t n = read_n_bytes(client_fd, move, sizeof(move));
+
+        if (n == sizeof(move)) {
+            int dx = move[0];
+            int dy = move[1];
+
+            try_move(current_level, dx, dy);
+            send_level(client_fd, current_level);
+        } else if (n == 0) {
+            printf("Client disconnected\n");
+            break;
+        } else {
+            perror("read failed");
+            break;
         }
-
-        printf("✅ New client connected!\n");
-
-        Level* original_level = load_level(level_name);
-
-        Level* current_level = malloc(sizeof(Level));
-
-        copy_level(current_level, original_level);
-
-        if (!current_level) {
-            printf("Failed to load level!\n");
-            exit(EXIT_FAILURE);
-        }
-
-        send_level(client_fd, current_level);
-
-        while (1) {
-            // Send game state to client
-
-            // printf("hallo dx: %d and dy: %d\n", dx, dy);
-            // Send back updated state
-
-            int move[2];
-            ssize_t n = read_n_bytes(client_fd, move, sizeof(move));
-
-            if (n == sizeof(move)) {
-                int dx = move[0];
-                int dy = move[1];
-                
-                try_move(current_level, dx, dy);
-                send_level(client_fd, current_level);
-            } else if (n == 0) {
-                printf("Client disconnected\n");
-                break;
-            } else {
-                perror("read failed");
-                break;
-            }
-        }
-
-        free_level(current_level);
-        free_level(original_level);
-
-        close(client_fd);
     }
+
+    free_level(current_level);
+    free_level(original_level);
+
+    close(client_fd);
+    free(client);
+    return NULL;
+}
+
+int setup_server_socket(int port) {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        perror("Socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    int opt = 1;
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (bind(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        perror("Bind failed");
+        close(sock);
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(sock, 10) < 0) {
+        perror("Listen failed");
+        close(sock);
+        exit(EXIT_FAILURE);
+    }
+
+    return sock;
 }
 
 int main(int argc, char* argv[]) {
@@ -136,7 +130,32 @@ int main(int argc, char* argv[]) {
     level_name = argv[2];
 
     signal(SIGINT, handle_sigint);
-    run_server(port, level_name);
 
+    int server_socket = setup_server_socket(port);
+
+    printf("Server listening on port %d...\n", port);
+
+    int client_id = 0;
+
+    while (1) {
+        struct sockaddr_in client_addr;
+        socklen_t addr_len = sizeof(client_addr);
+        int client_fd = accept(server_socket, (struct sockaddr*)&client_addr, &addr_len);
+        if (client_fd < 0) {
+            perror("accept");
+            continue;
+        }
+
+        client_info_t* info = malloc(sizeof(client_info_t));
+        info->sock = client_fd;
+        info->id = client_id++;
+        info->level_name = level_name; 
+
+        pthread_t tid;
+        pthread_create(&tid, NULL, client_thread, info);
+        pthread_detach(tid);
+    }
+
+    close(server_socket);
     return 0;
 }

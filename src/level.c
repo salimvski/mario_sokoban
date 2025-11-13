@@ -5,7 +5,25 @@
 #include <sys/socket.h>
 
 
-Level *recv_level(int sock) {
+int update_level_from_socket(int sock, Level *lvl) {
+
+    int width, height;
+    if (recv(sock, &width, sizeof(int), MSG_WAITALL) <= 0) return -1;
+    if (recv(sock, &height, sizeof(int), MSG_WAITALL) <= 0) return -1;
+
+    if (width != lvl->width || height != lvl->height) return -1;
+
+    if (recv(sock, &lvl->player, sizeof(Player), MSG_WAITALL) <= 0) return -1;
+
+    for (int i = 0; i < lvl->height; i++) {
+        if (recv(sock, lvl->tiles[i], lvl->width, MSG_WAITALL) <= 0) return -1;
+    }
+
+    return 0;
+}
+
+
+Level *receive_level_from_socket(int sock) {
     Level *lvl = malloc(sizeof(Level));
     if (!lvl) return NULL;
 
@@ -13,7 +31,6 @@ Level *recv_level(int sock) {
     recv(sock, &lvl->height, sizeof(int), MSG_WAITALL);
     recv(sock, &lvl->player, sizeof(Player), MSG_WAITALL);
 
-    // allocate tiles
     lvl->tiles = malloc(lvl->height * sizeof(char *));
     for (int i = 0; i < lvl->height; i++) {
         lvl->tiles[i] = malloc(lvl->width + 1);
@@ -37,7 +54,7 @@ ssize_t send_all(int sock, void *buf, size_t len) {
 }
 
 void send_level(int client_fd, Level *level) {
-    // send width and height
+
     if (send_all(client_fd, &level->width, sizeof(int)) <= 0) {
         perror("send width failed");
         return;
@@ -47,13 +64,11 @@ void send_level(int client_fd, Level *level) {
         return;
     }
 
-    // send player position
     if (send_all(client_fd, &level->player, sizeof(Player)) <= 0) {
         perror("send player failed");
         return;
     }
 
-    // send tiles row by row
     for (int i = 0; i < level->height; i++) {
         if (send_all(client_fd, level->tiles[i], level->width * sizeof(char)) <= 0) {
             perror("send tiles failed");

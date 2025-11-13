@@ -1,7 +1,11 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-// TODO: Start TCP echo server on given port
+typedef struct {
+    int sock;
+    int id;
+    char* level_name;
+} client_info_t;
 
 
 ssize_t read_n_bytes(int sock, void *buf, size_t n);

@@ -45,7 +45,8 @@ int main(int argc, char* argv[]) {
     serv_addr.sin_port = htons(port);
     inet_pton(AF_INET, server_ip, &serv_addr.sin_addr);
 
-    if (connect(client_socket, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+    if (connect(client_socket, (struct sockaddr*)&serv_addr,
+                sizeof(serv_addr)) < 0) {
         perror("connect failed");
         return 1;
     }
@@ -67,29 +68,43 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    Mix_Music* bgm = Mix_LoadMUS("assets/mario_theme.mp3");
-    if (bgm)
-        Mix_PlayMusic(bgm, -1);
+    Mix_Music* background_music = Mix_LoadMUS("assets/mario_theme.mp3");
+    if (!background_music) {
+        fprintf(stderr, "Failed to load music: %s\n", Mix_GetError());
+    } else {
+        Mix_VolumeMusic(5);
+        Mix_PlayMusic(background_music, -1);  // loop indefinitely
+    }
 
     SDL_DisplayMode DM;
     SDL_GetCurrentDisplayMode(0, &DM);
     int screen_w = DM.w;
     int screen_h = DM.h;
+
     SDL_Window* window = SDL_CreateWindow(
         "Mario Sokoban",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         screen_w / 2, screen_h / 2,
         SDL_WINDOW_RESIZABLE);
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+
+    if (!window) {
+        fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
+        return 1;
+    }
+    SDL_Renderer* renderer =
+        SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+
+    if (!renderer) {
+        fprintf(stderr, "SDL_CreateRenderer failed: %s\n", SDL_GetError());
+        return 1;
+    }
 
     init_textures(renderer);
 
     int running = 1;
-    int first = 0;
     SDL_Event e;
-    Level* level = NULL;
 
-    level = recv_level(client_socket);
+    Level* level = receive_level_from_socket(client_socket);
 
     SDL_RenderSetLogicalSize(renderer, level->width * 32, level->height * 32);
 
@@ -98,9 +113,6 @@ int main(int argc, char* argv[]) {
     SDL_RenderPresent(renderer);
 
     while (running) {
-        // === Receive latest level state ===
-        // if (level) free_level(level);
-
         if (!level) {
             printf("Connection closed or level receive failed.\n");
             break;
@@ -118,7 +130,6 @@ int main(int argc, char* argv[]) {
                         break;
                     case SDLK_r:
                         printf("its a reset !\n");
-                        // reset_level(current_level, original_level);
                         break;
                     case SDLK_w:
                         dx = -1;
@@ -136,20 +147,18 @@ int main(int argc, char* argv[]) {
                         running = 0;
                         break;
                 }
-                // try_move(current_level, dx, dy);
             }
         }
 
-        printf("dx: %d and dy: %d\n", dx, dy);
-        // === Send move to server ===
         if (dx != 0 || dy != 0) {
             int move[2] = {dx, dy};
-            printf("im gonna send move !\n");
             send(client_socket, move, sizeof(move), 0);
-            level = recv_level(client_socket);
-        }
 
-        
+            if (update_level_from_socket(client_socket, level) < 0) {
+                printf("Failed to update level\n");
+                break;
+            }
+        }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
@@ -158,13 +167,15 @@ int main(int argc, char* argv[]) {
         SDL_Delay(16);
     }
 
-    if (level)
-        free_level(level);
+    destroy_textures();
+    free_level(level);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     IMG_Quit();
-    Mix_CloseAudio();
     SDL_Quit();
+    Mix_FreeMusic(background_music);
+    Mix_CloseAudio();
+
     close(client_socket);
 
     return 0;
