@@ -10,12 +10,16 @@
 
 #include "level.h"
 #include "logic.h"
+#include "protocol.h"
 #include "render.h"
 
 int client_socket = -1;
 
+#include <signal.h>
+
 void handle_sigint(int sig) {
-    printf("\nCaught SIGINT, shutting down client...\n");
+    printf("\nCaught signal %d (%s), shutting down client...\n",
+           sig, strsignal(sig));
     if (client_socket >= 0) {
         close(client_socket);
     }
@@ -118,30 +122,33 @@ int main(int argc, char* argv[]) {
             break;
         }
 
-        int dx = 0, dy = 0;
+        Command cmd = {0};
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT)
                 running = 0;
             else if (e.type == SDL_KEYDOWN) {
-                printf("its a key down\n");
                 switch (e.key.keysym.sym) {
                     case SDLK_q:
                         running = 0;
                         break;
                     case SDLK_r:
-                        printf("its a reset !\n");
+                        cmd.type = 'R';
                         break;
                     case SDLK_w:
-                        dx = -1;
+                        cmd.type = 'W';
+                        cmd.dx = -1;
                         break;
                     case SDLK_s:
-                        dx = 1;
+                        cmd.type = 'S';
+                        cmd.dx = 1;
                         break;
                     case SDLK_a:
-                        dy = -1;
+                        cmd.type = 'A';
+                        cmd.dy = -1;
                         break;
                     case SDLK_d:
-                        dy = 1;
+                        cmd.type = 'D';
+                        cmd.dy = 1;
                         break;
                     case SDLK_ESCAPE:
                         running = 0;
@@ -150,14 +157,11 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        if (dx != 0 || dy != 0) {
-            int move[2] = {dx, dy};
-            send(client_socket, move, sizeof(move), 0);
+        send(client_socket, &cmd, sizeof(cmd), 0);
 
-            if (update_level_from_socket(client_socket, level) < 0) {
-                printf("Failed to update level\n");
-                break;
-            }
+        if (update_level_from_socket(client_socket, level) < 0) {
+            printf("Failed to update level\n");
+            break;
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);

@@ -1,17 +1,20 @@
+#include "server.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <stdbool.h>
+
 #include "level.h"
 #include "logic.h"
-#include "server.h"
+#include "protocol.h"
 
 int server_socket = -1;
 
@@ -38,11 +41,9 @@ void* client_thread(void* arg) {
     client_info_t* client = (client_info_t*)arg;
     int client_fd = client->sock;
     int id = client->id;
-    char *level_name = client->level_name;
+    char* level_name = client->level_name;
 
     printf("Client %d connected\n", id);
-
-    char buffer[256];
 
     Level* original_level = load_level(level_name);
 
@@ -58,16 +59,20 @@ void* client_thread(void* arg) {
     send_level(client_fd, current_level);
 
     while (1) {
+        Command cmd;
+        ssize_t n = read_n_bytes(client_fd, &cmd, sizeof(cmd));
 
-        int move[2];
-        ssize_t n = read_n_bytes(client_fd, move, sizeof(move));
-
-        if (n == sizeof(move)) {
-            int dx = move[0];
-            int dy = move[1];
-
-            try_move(current_level, dx, dy);
-            send_level(client_fd, current_level);
+        if (n == sizeof(cmd)) {
+            switch (cmd.type) {
+                case 'R':
+                    reset_level(current_level, original_level);
+                    send_level(client_fd, current_level);
+                    break;
+                default:
+                    try_move(current_level, cmd.dx, cmd.dy);
+                    send_level(client_fd, current_level);
+                    break;
+            }
         } else if (n == 0) {
             printf("Client disconnected\n");
             break;
@@ -93,7 +98,7 @@ int setup_server_socket(int port) {
     }
 
     int opt = 1;
-    
+
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         perror("setsockopt failed");
         close(sock);
@@ -154,7 +159,7 @@ int main(int argc, char* argv[]) {
         client_info_t* info = malloc(sizeof(client_info_t));
         info->sock = client_fd;
         info->id = client_id++;
-        info->level_name = level_name; 
+        info->level_name = level_name;
 
         pthread_t tid;
         pthread_create(&tid, NULL, client_thread, info);
