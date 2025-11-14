@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Failed to load music: %s\n", Mix_GetError());
     } else {
         Mix_VolumeMusic(5);
-        Mix_PlayMusic(background_music, -1);  // loop indefinitely
+        Mix_PlayMusic(background_music, -1);
     }
 
     SDL_DisplayMode DM;
@@ -116,20 +116,31 @@ int main(int argc, char* argv[]) {
     render_map_sdl(renderer, level);
     SDL_RenderPresent(renderer);
 
-    while (running) {
-        if (!level) {
-            printf("Connection closed or level receive failed.\n");
-            break;
-        }
+    char player_direction = 'F'; 
 
-        Command cmd = {0};
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT)
+    while (running) {
+    if (!level) {
+        printf("Connection closed or level receive failed.\n");
+        break;
+    }
+
+
+    Command cmd = {0};
+
+    // Handle events
+    while (SDL_PollEvent(&e)) {
+        switch (e.type) {
+            case SDL_QUIT:
                 running = 0;
-            else if (e.type == SDL_KEYDOWN) {
+                printf("Quit event detected!\n");
+                break;
+
+            case SDL_KEYDOWN:
                 switch (e.key.keysym.sym) {
                     case SDLK_q:
+                    case SDLK_ESCAPE:
                         running = 0;
+                        printf("Quit key pressed!\n");
                         break;
                     case SDLK_r:
                         cmd.type = 'R';
@@ -137,39 +148,53 @@ int main(int argc, char* argv[]) {
                     case SDLK_w:
                         cmd.type = 'W';
                         cmd.dx = -1;
+                        player_direction = 'U';
                         break;
                     case SDLK_s:
                         cmd.type = 'S';
                         cmd.dx = 1;
+                        player_direction = 'S';
                         break;
                     case SDLK_a:
                         cmd.type = 'A';
                         cmd.dy = -1;
+                        player_direction = 'L';
                         break;
                     case SDLK_d:
                         cmd.type = 'D';
                         cmd.dy = 1;
+                        player_direction = 'R';
                         break;
-                    case SDLK_ESCAPE:
-                        running = 0;
+                    default:
                         break;
                 }
-            }
+                break;
+
+            default:
+                // Ignore other SDL events
+                break;
         }
-
-        send(client_socket, &cmd, sizeof(cmd), 0);
-
-        if (update_level_from_socket(client_socket, level) < 0) {
-            printf("Failed to update level\n");
-            break;
-        }
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-        render_map_sdl(renderer, level);
-        SDL_RenderPresent(renderer);
-        SDL_Delay(16);
     }
+
+
+    send(client_socket, &cmd, sizeof(cmd), 0);
+
+    if (update_level_from_socket(client_socket, level) < 0) {
+        printf("Failed to update level\n");
+        break;
+    }
+
+    level->player.dir = player_direction;
+
+    // Render frame
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    render_map_sdl(renderer, level);
+    SDL_RenderPresent(renderer);
+
+    SDL_Delay(16); // ~60 FPS
+}
+
 
     destroy_textures();
     free_level(level);

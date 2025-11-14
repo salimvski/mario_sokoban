@@ -3,6 +3,7 @@
 
 typedef struct {
     int x, y;
+    char dir;   
 } Player;
 
 typedef struct {

@@ -26,7 +26,7 @@ void init_textures(SDL_Renderer *renderer) {
     box_tex    = load_texture(renderer, "assets/tiles/box.png");
     goal_tex   = load_texture(renderer, "assets/tiles/goal.png");
     player_tex[0] = load_texture(renderer, "assets/player/player_front.png");
-    player_tex[1] = load_texture(renderer, "assets/player/player_front.png");
+    player_tex[1] = load_texture(renderer, "assets/player/player_up.png");
     player_tex[2] = load_texture(renderer, "assets/player/player_left.png");
     player_tex[3] = load_texture(renderer, "assets/player/player_right.png");
 }
@@ -53,22 +53,30 @@ void render_map_sdl(SDL_Renderer *renderer, Level *lvl) {
             dst.w = dst.h = tile_size;
 
             char t = lvl->tiles[i][j];
-            SDL_Texture *tex = floor_tex; // default
+            SDL_Texture *tex = floor_tex;
 
-            switch (t) {
+            switch(t) {
                 case '#': tex = wall_tex; break;
                 case '$': tex = box_tex; break;
                 case '.': tex = goal_tex; break;
-                default:  tex = floor_tex; break;
             }
 
             SDL_RenderCopy(renderer, tex, NULL, &dst);
         }
     }
 
-    // Draw player (always down for now)
     dst.x = lvl->player.y * tile_size;
     dst.y = lvl->player.x * tile_size;
     dst.w = dst.h = tile_size;
-    SDL_RenderCopy(renderer, player_tex[1], NULL, &dst);
+
+    SDL_Texture *tex;
+    switch(lvl->player.dir) {
+        case 'F': tex = player_tex[0]; break; // front
+        case 'U': tex = player_tex[1]; break; // up
+        case 'L': tex = player_tex[2]; break; // left
+        case 'R': tex = player_tex[3]; break; // right
+        default:  tex = player_tex[0]; break; // fallback
+    }
+
+    SDL_RenderCopy(renderer, tex, NULL, &dst);
 }
