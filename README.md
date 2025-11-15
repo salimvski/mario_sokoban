@@ -36,7 +36,7 @@ sudo dnf install glibc-devel libasan
 assets/
     tiles/
     player/
-    mario_theme.mp3
+    audio/
 levels/
     level1.txt
     level2.txt
@@ -104,14 +104,14 @@ make run-client ARGS="127.0.0.1 5666"
 ### Controls
 
 * **W / A / S / D** → Move player
-* **R** → Reset level (if implemented)
+* **R** → Reset level
 * **Q or ESC** → Exit the client
 
 ---
 
 ## Audio
 
-* Background music: `assets/mario_theme.mp3`
+* Background music: `assets/audio/periwinkle.mp3`
 * Default volume: 30%
 
 ```c
@@ -125,8 +125,8 @@ Mix_VolumeMusic(MIX_MAX_VOLUME * 0.3);
 ## ⚠ Known Memory Leaks
 
 * Small leaks (~2–3 KB) may appear in **ASan** or **Valgrind** output.
-* These come from **SDL2 internal allocations**, not your code.
-* Your **textures, music, and surfaces are properly freed**.
+* These come from **SDL2 internal allocations**, not the code.
+* The **textures, music, and surfaces are properly freed**.
 
 ---
 
