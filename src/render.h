@@ -10,4 +10,6 @@ void destroy_textures();
 
 void render_map_sdl(SDL_Renderer *renderer, Level *lvl);
 
+void render_map_sdl(SDL_Renderer *renderer, Level *lvl);
+
 #endif
