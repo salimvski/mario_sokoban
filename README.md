@@ -1,22 +1,25 @@
 # Mario Sokoban (C / SDL2)
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)  
 [![C](https://img.shields.io/badge/language-C-brightgreen)](https://www.iso.org/standard/74528.html)
 
-A simple networked **Sokoban** game written in C using **SDL2**, **SDL2_mixer**, and **SDL2_image**.
-Includes a **server** for game logic and a **client** for rendering and input.
+A network-enhanced **Sokoban** game in C using **SDL2**, **SDL2_ttf**, **SDL2_mixer**, **SDL2_image**.  
+The client includes a **graphical menu**, **level selection**, **background music**, and can run either:
+
+- in **Local Mode** (client automatically launches its own server), or  
+- in **External Server Mode** (connect manually to a remote server).
 
 ---
 
 ## 🛠 Prerequisites
 
-Install required packages on **Fedora**:
+Install required packages (Fedora):
 
 ```bash
-sudo dnf install gcc make SDL2-devel SDL2_mixer-devel SDL2_image-devel valgrind
+sudo dnf install gcc make SDL2-devel SDL2_mixer-devel SDL2_image-devel SDL2_ttf-devel valgrind
 ```
 
-Optional (for debugging memory leaks):
+Optional (AddressSanitizer support):
 
 ```bash
 sudo dnf install glibc-devel libasan
@@ -27,16 +30,19 @@ sudo dnf install glibc-devel libasan
 ## 📁 Project Structure
 
 ```
-./src/
+src/
     client.c
+    client.h
     server.c
     level.c
-    render.c
     logic.c
+    render.c
 assets/
+    menu/
     tiles/
     player/
     audio/
+    fonts/
 levels/
     level1.txt
     level2.txt
@@ -48,121 +54,153 @@ README.md
 
 ## 🏗 Compilation
 
-### 1. Build everything
+### Build everything
 
 ```bash
 make
 ```
 
-* **Server** → `./server`
-* **Client** → `./sokoban` (compiled with AddressSanitizer for debugging)
+Produces:
+- **Client** → `./sokoban`
+- **Server** → `./server`
 
-### 2. Clean build
+### Clean build
 
 ```bash
 make clean
 ```
 
-Removes binaries (`server` and `sokoban`).
+---
+
+## ▶ Running the Game
+
+### 🟩 Local Mode (recommended)
+
+You run **ONLY the client**.  
+The client automatically launches its own server.
+
+```bash
+./sokoban
+```
+
+Then inside the game menu:
+
+1. **Jouer**
+2. Choose **Level 1** or **Level 2**
+3. The server starts automatically  
+4. Gameplay begins
 
 ---
 
-## Running the Server
+## 🌐 Running With an External Server
+
+To use a remote server:
+
+### Start the server manually
 
 ```bash
-make run-server ARGS="<port> <level_file>"
+./server <port> <level_file>
 ```
 
 Example:
 
 ```bash
-make run-server ARGS="5666 levels/level2.txt"
+./server 5666 levels/level1.txt
 ```
 
-* `<port>`: TCP port for the server.
-* `<level_file>`: Path to the level file.
-
-> Server runs under **Valgrind** by default to detect memory leaks.
-
----
-
-## Running the Client
+### Start the client with host + port
 
 ```bash
-make run-client ARGS="<host> <port>"
+./sokoban <server_ip> <port>
 ```
 
 Example:
 
 ```bash
-make run-client ARGS="127.0.0.1 5666"
+./sokoban 127.0.0.1 5666
 ```
 
-* `<host>`: Server IP address (`127.0.0.1` for local).
-* `<port>`: TCP port server is listening on.
-
-### Controls
-
-* **W / A / S / D** → Move player
-* **R** → Reset level
-* **Q or ESC** → Exit the client
+> In this mode, the client **does NOT show the level selection menu**  
+> (server decides the level).
 
 ---
 
-## Audio
+## 🎮 Controls
 
-* Background music: `assets/audio/periwinkle.mp3`
-* Default volume: 30%
+| Key | Action |
+|-----|--------|
+| **W / A / S / D** | Move player |
+| **R** | Reset level |
+| **ESC / Q** | Quit |
+| **ENTER** | Validate menu selection |
+| **↑ / ↓** | Navigate menu |
+
+---
+
+## 🔊 Audio
+
+- Background music: `assets/audio/music/periwinkle.mp3`
+- Volume: **30%**
 
 ```c
 Mix_VolumeMusic(MIX_MAX_VOLUME * 0.3);
 ```
 
-* Requires **SDL2_mixer**.
+Requires `SDL2_mixer`.
 
 ---
 
-## ⚠ Known Memory Leaks
+## 🖥 Menu System
 
-* Small leaks (~2–3 KB) may appear in **ASan** or **Valgrind** output.
-* These come from **SDL2 internal allocations**, not the code.
-* The **textures, music, and surfaces are properly freed**.
+### Main Menu
+- Jouer  
+- Quitter  
+
+### Level Selection Menu (Local Mode)
+- Level 1  
+- Level 2  
+- Retour  
+
+Full-screen background image adapts to window size.
 
 ---
 
-## Example Workflow
+## 🚧 Memory Notes
 
-1. Build everything:
+- Small leaks (< 3 KB) may appear from SDL internals (ASan / Valgrind).
+- All textures, music, surfaces, and level data are properly freed.
+- Server runs clean under Valgrind.
+
+---
+
+## 🧪 Example Workflow (Local Mode)
 
 ```bash
 make
+./sokoban
 ```
 
-2. Start server:
-
-```bash
-make run-server ARGS="5666 levels/level2.txt"
-```
-
-3. Start client in a new terminal:
-
-```bash
-make run-client ARGS="127.0.0.1 5666"
-```
-
-4. Control the player with **W/A/S/D**, and **Q** to quit.
+Navigate menus → choose level → play.
 
 ---
 
-## Notes
+## 🧪 Example Workflow (External Server Mode)
 
-* Client is compiled with **AddressSanitizer** for debugging.
-* Server is run under **Valgrind** to catch leaks and errors in network handling.
-* Level files are in `levels/` and can be modified to create custom puzzles.
-* Makefile supports `ARGS` to easily pass parameters for port, host, and level.
+Terminal 1:
+
+```bash
+./server 5666 levels/level2.txt
+```
+
+Terminal 2:
+
+```bash
+./sokoban 127.0.0.1 5666
+```
 
 ---
 
 ## License
 
-This project is licensed under the **MIT License** – see [LICENSE](LICENSE) for details.
+This project is licensed under the **MIT License**.  
+See [LICENSE](LICENSE) for details.
