@@ -128,7 +128,8 @@ Level *load_level(const char *filename) {
     lvl->tiles = malloc(sizeof(char *) * lvl->height);
     for (int i = 0; i < lvl->height; i++) {
         lvl->tiles[i] = malloc(lvl->width + 1);
-        fgets(line, sizeof(line), f);
+        if (!fgets(line, sizeof(line), f))
+            break;
         for (int j = 0; j < lvl->width; j++) {
             char c = line[j];
             if (c == '@') {
